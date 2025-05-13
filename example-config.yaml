@@ -1,0 +1,37 @@
+server:
+  port: 6000
+
+logging:
+  access:
+    stderr: true
+  internal:
+    level: debug
+    stderr: true
+
+tip:
+  linked_issuer:
+    issuer_url: https://linked.issuer.com
+    native_introspection_endpoint: https://linked.issuer.com/internal/introspect
+  remote_issuers:
+    - issuer_url: https://issuer.example.com
+#      introspection endpoint can be provided or dynamically discovered
+#      introspection_endpoint: https://issuer.example.com/introspect
+      client_id: client_id
+      client_secret: client_secret
+      claim_renaming:
+        weird_groups: groups
+        user_id: username
+      claim_mapping:
+        strings:
+          sub:
+            one-sub: other-sub
+        string_arrays:
+          entitlements:
+            hpc:
+              - compute
+          weird_groups:
+            all-users:
+              - users
+            special-users:
+              - admins
+              - dev
