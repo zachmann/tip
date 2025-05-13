@@ -8,7 +8,6 @@ import (
 
 // VERSION holds the server's version
 //
-//go:embed VERS
 //go:embed VERSION
 var VERSION string
 
