@@ -15,16 +15,23 @@ import (
 	"github.com/zachmann/go-oidfed/pkg"
 )
 
-func NewTokenProxy(conf TIPConfig) *TIP {
+func NewTokenProxy(conf TIPConfig, authChecker AuthorizationChecker) *TIP {
 	for i, issuer := range conf.RemoteIssuers {
 		issuer.discoverEndpoint()
 		conf.RemoteIssuers[i] = issuer
 	}
-	return &TIP{conf: conf}
+	if authChecker == nil {
+		authChecker = NewIntrospectionAuthChecker(conf.LinkedIssuer.NativeIntrospectionEndpoint)
+	}
+	return &TIP{
+		conf:        conf,
+		authChecker: authChecker,
+	}
 }
 
 type TIP struct {
-	conf TIPConfig
+	conf        TIPConfig
+	authChecker AuthorizationChecker
 }
 
 type TokenIntrospectionRequest struct {
@@ -162,6 +169,14 @@ func (t TIP) findRemoteIssuer(iss string) *remoteIssuerConf {
 }
 
 func (t TIP) remoteIntrospection(iss string, req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {
+	authed, err := t.authChecker.CheckAuthorization(req.Authorization)
+	if err != nil {
+		return nil, err
+	}
+	if !authed {
+		return nil, invalidClientError("")
+	}
+
 	params, err := query.Values(req)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -236,6 +251,13 @@ func (t TIP) remoteIntrospection(iss string, req TokenIntrospectionRequest) (*To
 
 func (t TIP) fallbackIntrospection(req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {
 	if t.conf.FallbackIssuer.IssuerURL == "" {
+		authed, err := t.authChecker.CheckAuthorization(req.Authorization)
+		if err != nil {
+			return nil, err
+		}
+		if !authed {
+			return nil, invalidClientError("")
+		}
 		return &TokenIntrospectionResponse{Active: false}, nil
 	}
 	return t.remoteIntrospection(t.conf.FallbackIssuer.IssuerURL, req)

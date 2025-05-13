@@ -14,7 +14,7 @@ var _tip *pkg.TIP
 
 func tip() *pkg.TIP {
 	if _tip == nil {
-		_tip = pkg.NewTokenProxy(config.Get().TIP)
+		_tip = pkg.NewTokenProxy(config.Get().TIP, nil)
 	}
 	return _tip
 }
