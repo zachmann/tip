@@ -23,6 +23,7 @@ type remoteIssuerConf struct {
 	IntrospectionEndpoint string            `yaml:"introspection_endpoint"`
 	ClientID              string            `yaml:"client_id"`
 	ClientSecret          string            `yaml:"client_secret"`
+	DropClaims            []string          `yaml:"drop_claims"`
 	ClaimMapping          claimsMapping     `yaml:"claim_mapping"`
 	ClaimRenaming         map[string]string `yaml:"claim_renaming"`
 }

@@ -3,6 +3,7 @@ package pkg
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/fatih/structs"
@@ -220,6 +221,9 @@ func (t TIP) remoteIntrospection(iss string, req TokenIntrospectionRequest) (*To
 		finalResponse.Extra = make(map[string]any, l)
 	}
 	for k, v := range resp.Extra {
+		if slices.Contains(conf.DropClaims, k) {
+			continue
+		}
 		newK, ok := conf.ClaimRenaming[k]
 		if !ok {
 			newK = k
