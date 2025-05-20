@@ -12,6 +12,15 @@ tip:
   linked_issuer:
     issuer_url: https://linked.issuer.com
     native_introspection_endpoint: https://linked.issuer.com/internal/introspect
+  # Configuration of the fallback issuer that is used when the token issuer
+  # cannot be determined; leave empty to return active: false
+  # Same format as a single issuer in remote_issuers
+  fallback_issuer_unknown_token_issuer:
+  # Configuration of the fallback issuer that is used when the token issuer
+  # can be determined but is not in the list of remote_issuers; leave empty
+  # to return active: false
+  # Same format as a single issuer in remote_issuers
+  fallback_issuer_unsupported_token_issuer:
   remote_issuers:
     - issuer_url: https://issuer.example.com
 #      introspection endpoint can be provided or dynamically discovered

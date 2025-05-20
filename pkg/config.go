@@ -7,10 +7,11 @@ import (
 )
 
 type TIPConfig struct {
-	LinkedIssuer   linkedIssuerConf   `yaml:"linked_issuer"`
-	RemoteIssuers  []remoteIssuerConf `yaml:"remote_issuers"`
-	FallbackIssuer remoteIssuerConf   `yaml:"fallback_issuer"`
-	Federation     federationConf     `yaml:"federation"`
+	LinkedIssuer              linkedIssuerConf   `yaml:"linked_issuer"`
+	RemoteIssuers             []remoteIssuerConf `yaml:"remote_issuers"`
+	FallbackIssuerUnknown     remoteIssuerConf   `yaml:"fallback_issuer_unknown_token_issuer"`
+	FallbackIssuerUnsupported remoteIssuerConf   `yaml:"fallback_issuer_unsupported_token_issuer"`
+	Federation                federationConf     `yaml:"federation"`
 }
 
 type linkedIssuerConf struct {

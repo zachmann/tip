@@ -140,19 +140,19 @@ func (t TIP) Introspect(req TokenIntrospectionRequest) (*TokenIntrospectionRespo
 	}
 	m, err := jws.Parse([]byte(token))
 	if err != nil {
-		return t.fallbackIntrospection(req)
+		return t.unknownFallbackIntrospection(req)
 	}
 	var claims map[string]any
 	if err = json.Unmarshal(m.Payload(), &claims); err != nil {
-		return t.fallbackIntrospection(req)
+		return t.unknownFallbackIntrospection(req)
 	}
 	iss, ok := claims["iss"]
 	if !ok {
-		return t.fallbackIntrospection(req)
+		return t.unknownFallbackIntrospection(req)
 	}
 	issuer, ok := iss.(string)
 	if !ok {
-		return t.fallbackIntrospection(req)
+		return t.unknownFallbackIntrospection(req)
 	}
 	if issuerutils.CompareIssuerURLs(issuer, t.conf.LinkedIssuer.IssuerURL) {
 		return t.linkedIntrospection(req)
@@ -177,14 +177,22 @@ func (t TIP) remoteIntrospection(iss string, req TokenIntrospectionRequest) (*To
 	if !authed {
 		return nil, invalidClientError("")
 	}
+	conf := t.findRemoteIssuer(iss)
+	if conf == nil {
+		return t.unsupportedFallbackIntrospection(req)
+	}
+	return t.introspectRemoteIssuer(conf, req)
+}
 
+func (t TIP) introspectRemoteIssuer(conf *remoteIssuerConf, req TokenIntrospectionRequest) (
+	*TokenIntrospectionResponse, error,
+) {
+	if conf == nil {
+		return &TokenIntrospectionResponse{Active: false}, nil
+	}
 	params, err := query.Values(req)
 	if err != nil {
 		return nil, errors.WithStack(err)
-	}
-	conf := t.findRemoteIssuer(iss)
-	if conf == nil {
-		return &TokenIntrospectionResponse{Active: false}, nil
 	}
 	httpResp, err := httpclient.Do().R().
 		SetFormDataFromValues(params).
@@ -253,8 +261,8 @@ func (t TIP) remoteIntrospection(iss string, req TokenIntrospectionRequest) (*To
 	return finalResponse, nil
 }
 
-func (t TIP) fallbackIntrospection(req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {
-	if t.conf.FallbackIssuer.IssuerURL == "" {
+func (t TIP) unknownFallbackIntrospection(req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {
+	if t.conf.FallbackIssuerUnknown.IssuerURL == "" {
 		authed, err := t.authChecker.CheckAuthorization(req.Authorization)
 		if err != nil {
 			return nil, err
@@ -264,8 +272,25 @@ func (t TIP) fallbackIntrospection(req TokenIntrospectionRequest) (*TokenIntrosp
 		}
 		return &TokenIntrospectionResponse{Active: false}, nil
 	}
-	return t.remoteIntrospection(t.conf.FallbackIssuer.IssuerURL, req)
+	return t.introspectRemoteIssuer(&t.conf.FallbackIssuerUnknown, req)
 }
+
+func (t TIP) unsupportedFallbackIntrospection(req TokenIntrospectionRequest) (
+	*TokenIntrospectionResponse, error,
+) {
+	if t.conf.FallbackIssuerUnsupported.IssuerURL == "" {
+		authed, err := t.authChecker.CheckAuthorization(req.Authorization)
+		if err != nil {
+			return nil, err
+		}
+		if !authed {
+			return nil, invalidClientError("")
+		}
+		return &TokenIntrospectionResponse{Active: false}, nil
+	}
+	return t.introspectRemoteIssuer(&t.conf.FallbackIssuerUnsupported, req)
+}
+
 func (t TIP) linkedIntrospection(req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {
 	params, err := query.Values(req)
 	if err != nil {
