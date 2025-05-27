@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/fatih/structs v1.1.0
-	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/google/go-querystring v1.1.0
 	github.com/lestrrat-go/jwx/v3 v3.0.1
 	github.com/oidc-mytoken/utils v0.1.2
