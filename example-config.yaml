@@ -1,39 +1,95 @@
+# Configuration for the http server
 server:
+  # If TLS is not enabled, tip will listen on this port
   port: 6000
+  tls:
+    # Unless false TLS is enabled if 'cert' and 'key' are given
+    enabled: true
+    # Unless false port 80 is redirected to 443
+    redirect_http: true
+    # The TLS certificate file
+    cert:
+    # The TLS certificate key file
+    key:
 
+# Configuration for logging
 logging:
+  # The web server access logs
   access:
-    stderr: true
+    # The directory where the log file should be placed
+    dir: "/var/log/tip"
+    # Indicates if tip should log additionally to stderr
+    stderr: false
+  # The tip internal logs
   internal:
-    level: debug
-    stderr: true
+    # The directory where the log file should be placed
+    dir: "/var/log/tip"
+    # Indicates if tip should log additionally to stderr
+    stderr: false
+    # The minimal log level that should be logged
+    level: "error"
+    # Configuration for 'smart' logging. If enabled internal logging is usually logged from the minimal log level as
+    # usual, but if an error occurs a special error log is logged to a dedicated file that contains all log entries
+    # (with all log levels, also levels that normally wouldn't be logged) for that particular request.
+    smart:
+      # If true smart logging is enabled
+      enabled: true
+      # The directory where the error log files are stored. If omitted it is equal to the normal internal logging dir
+      dir: "/var/log/tip/errors"
 
+# Configuration related to the TIP
 tip:
+  # The primary / linked issuer. The TIP has a direct relation to this issuer, i.e. TIP implements Remote Token
+  # Introspection for this issuer
   linked_issuer:
+    # The issuer url
     issuer_url: https://linked.issuer.com
+    # The issuer's native introspection endpoint; TIP will replay requests for "local" tokens at this endpoint.
     native_introspection_endpoint: https://linked.issuer.com/internal/introspect
-  # Configuration of the fallback issuer that is used when the token issuer
-  # cannot be determined; leave empty to return active: false
+  # Configuration of the fallback issuer that is used when the issuer of a token
+  # cannot be determined;
+  # If empty, {"active": false} is returned for such tokens.
+  # If set, the introspection request will be replayed at this fallback issuer.
   # Same format as a single issuer in remote_issuers
   fallback_issuer_unknown_token_issuer:
-  # Configuration of the fallback issuer that is used when the token issuer
-  # can be determined but is not in the list of remote_issuers; leave empty
-  # to return active: false
+  # Configuration of the fallback issuer that is used when the issuer of a token
+  # can be determined but is not in the list of remote_issuers;
+  # If empty, {"active": false} is returned for such tokens.
+  # If set, the introspection request will be replayed at this fallback issuer.
   # Same format as a single issuer in remote_issuers
   fallback_issuer_unsupported_token_issuer:
+  # Configuration of remote issuers; those are issuers with whom TIP has a trust relationship and will use for
+  # remotely inspecting tokens
   remote_issuers:
+      # The issuer  url of the remote issuer
     - issuer_url: https://issuer.example.com
-#      introspection endpoint can be provided or dynamically discovered
+#      The url of the introspection endpoint; this is optional; if not provided it will be dynamically discovered
 #      introspection_endpoint: https://issuer.example.com/introspect
+      # The client id registered for TIP
       client_id: client_id
+      # The client secret registered for TIP
       client_secret: client_secret
+      # A mapping for renaming claims; The key is the claim name at the remote issuer; the value is the renamed claim
+      # name return from TIP
       claim_renaming:
         weird_groups: groups
         user_id: username
+      # claim_mapping allows to map claim values from the remote issuer to other values. This is only supported for
+      # claims where the value is either a single string or an array of strings and those must be configured separately.
+      # If a claim is also renamed in claim_renaming the original claim name must be used, not the renamed one.
       claim_mapping:
+        # claim mapping for claims with single string values
+        # The following format must be used: Keys under 'strings' are claim names. For each claim name there is a
+        # simple string to string mapping, from the old claim value to the new claim value
         strings:
           sub:
             one-sub: other-sub
+        # claim mapping for claims with string array values
+        # The following format must be used: Keys under 'string_arrays' are claim names. For each claim name there is a
+        # mapping from a single (old) string to a list of (new) strings. If the old claim occurs in the claim value
+        # array it will be replaced with the passed list of values. This way it is possible to map a single value
+        # e.g. entitlement to multiple new entitlements; it is currently not possible to translate multiple values
+        # into a single one
         string_arrays:
           entitlements:
             hpc:
