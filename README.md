@@ -44,6 +44,10 @@ Providers and OAuth Authorisation Servers that already implement a native token 
 ## Configuration
 For an example configuration (including comments) please see [example-config.yaml](example-config.yaml).
 
+## Docker Image
+The docker image [myoidc/tip](https://hub.docker.com/r/myoidc/tip) is available at
+[dockerhub](https://hub.docker.com/r/myoidc/tip).
+
 ## Future Work
 
 - Support for OpenID Federation will be added. Then it is not required to register a client with remote issuers (as 
