@@ -86,7 +86,7 @@ func (log *loggingConf) validate() error {
 var possibleConfigLocations = []string{
 	".",
 	"config",
-	"/etc/mytoken",
+	"/etc/tip",
 }
 
 func validate() error {
