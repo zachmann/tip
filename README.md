@@ -19,27 +19,52 @@ Providers and OAuth Authorisation Servers that already implement a native token 
 
 ## What does TIP do?
 
-0. TIP receives token introspection requests.
-0. TIP inspects the token in the request and determines the issuer of the token:
-    - If the issuer is the linked AS, the request is replayed at the
-      [RFC7662](https://datatracker.ietf.org/doc/html/rfc7662) introspection endpoint and the response is forwarded 
-      without modifications to the client.
-    - Otherwise, the client authentication must be checked.
-0. To check client authentication the only option currently implemented requires TIP to send a dummy introspection 
-   request to the [RFC7662](https://datatracker.ietf.org/doc/html/rfc7662) introspection endpoint of the linked AS 
-   including a dummy token, but the real authentication from the client.
-    - If the client authentication fails, TIP will return a `401` error.
-    - If the client authentication is successful, TIP continues the (remote) introspection
-0. TIP continues to evaluate the issuer of the token:
-    - If the issuer cannot be determined, the token might be sent to a fallback issuer for remote introspection, 
-      otherwise `{"active": false"}` is returned.
-    - If the issuer can be determined, but is not supported, the token might be sent to a fallback issuer for remote 
-      introspection, otherwise `{"active": false"}` is returned.
-    - If the issuer is supported, the token is sent to the issuer's token introspection endpoint for remote 
-      introspection.
-0. If the response from the remote introspection is negative, TIP returns `{"active": false"}`
-0. If the response is positive, TIP can do some translation and renaming of claims before returning the response to 
-   the client.
+```mermaid
+flowchart TD
+   A[TIP receives token introspection request]
+   AA[TIP inspects the token in the request and determines the issuer of the token]
+   B{Is issuer the linked AS?}
+   C[Replay request at RFC7662 endpoint]
+   D[Return response to client unmodified]
+   E[Check client authentication]
+   F[Send dummy request
+    with real client auth
+    but dummy token
+    to linked AS's RFC7662 endpoint]
+   G{Client auth valid?}
+   H[Return 401 Unauthorized]
+   I[Continue remote introspection]
+   J{Can issuer
+    be determined?}
+   K{Is issuer supported?}
+   L{Is there a
+    fallback issuer
+    configured?}
+   Q[Send to fallback issuer's introspection endpoint]
+   M[Send token to issuer's introspection endpoint]
+   N{Response active?}
+   O[Return active=false]
+   P[Translate and rename claims
+    according to configured rules]
+   R[Return updated introspection response]
+
+   A --> AA
+   AA --> B
+   B -- Yes --> C --> D
+   B -- No --> E --> F --> G
+   G -- No --> H
+   G -- Yes --> I --> J
+   K -- No --> L
+   J -- No --> L
+   J -- Yes --> K
+   K -- Yes --> M --> N
+   N -- No --> O
+   Q --> N
+   N -- Yes --> P
+   L -- Yes --> Q
+   L -- No --> O
+   P --> R
+```
 
 ## Configuration
 For an example configuration (including comments) please see [example-config.yaml](example-config.yaml).
