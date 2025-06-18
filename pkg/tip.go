@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"github.com/fatih/structs"
+	"github.com/go-oidfed/lib"
 	"github.com/google/go-querystring/query"
 	"github.com/lestrrat-go/jwx/v3/jws"
 	"github.com/oidc-mytoken/utils/httpclient"
 	"github.com/oidc-mytoken/utils/unixtime"
 	"github.com/oidc-mytoken/utils/utils/issuerutils"
 	"github.com/pkg/errors"
-	"github.com/zachmann/go-oidfed/pkg"
 )
 
 func NewTokenProxy(conf TIPConfig, authChecker AuthorizationChecker) *TIP {
@@ -42,19 +42,19 @@ type TokenIntrospectionRequest struct {
 }
 
 type TokenIntrospectionResponse struct {
-	Active     bool                           `json:"active"`
-	Scope      string                         `json:"scope,omitempty"`
-	ClientID   string                         `json:"client_id,omitempty"`
-	Username   string                         `json:"username,omitempty"`
-	TokenType  string                         `json:"token_type,omitempty"`
-	Expiration unixtime.UnixTime              `json:"exp,omitempty"`
-	IssuedAt   unixtime.UnixTime              `json:"iat,omitempty"`
-	NotBefore  unixtime.UnixTime              `json:"nbf,omitempty"`
-	Subject    string                         `json:"sub,omitempty"`
-	Audience   pkg.SliceOrSingleValue[string] `json:"aud,omitempty"`
-	Issuer     string                         `json:"iss,omitempty"`
-	JTI        string                         `json:"jti,omitempty"`
-	Extra      map[string]any                 `json:"-"`
+	Active     bool                              `json:"active"`
+	Scope      string                            `json:"scope,omitempty"`
+	ClientID   string                            `json:"client_id,omitempty"`
+	Username   string                            `json:"username,omitempty"`
+	TokenType  string                            `json:"token_type,omitempty"`
+	Expiration unixtime.UnixTime                 `json:"exp,omitempty"`
+	IssuedAt   unixtime.UnixTime                 `json:"iat,omitempty"`
+	NotBefore  unixtime.UnixTime                 `json:"nbf,omitempty"`
+	Subject    string                            `json:"sub,omitempty"`
+	Audience   oidfed.SliceOrSingleValue[string] `json:"aud,omitempty"`
+	Issuer     string                            `json:"iss,omitempty"`
+	JTI        string                            `json:"jti,omitempty"`
+	Extra      map[string]any                    `json:"-"`
 }
 
 // MarshalJSON implements the json.Marshaler interface.
