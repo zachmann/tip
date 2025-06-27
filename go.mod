@@ -7,7 +7,7 @@ require (
 	github.com/go-oidfed/lib v0.5.0
 	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/google/go-querystring v1.1.0
-	github.com/lestrrat-go/jwx/v3 v3.0.7
+	github.com/lestrrat-go/jwx/v3 v3.0.8
 	github.com/oidc-mytoken/utils v0.1.2
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
