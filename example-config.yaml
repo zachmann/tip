@@ -7,6 +7,9 @@ server:
     enabled: true
     # Unless false port 80 is redirected to 443
     redirect_http: true
+    # If true, TLS uses the port from server.port and no http is used. If
+    # false, port 443 is used for TLS.
+    use_custom_port: false
     # The TLS certificate file
     cert:
     # The TLS certificate key file

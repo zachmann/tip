@@ -30,10 +30,11 @@ type serverConf struct {
 }
 
 type tlsConf struct {
-	Enabled      bool   `yaml:"enabled"`
-	RedirectHTTP bool   `yaml:"redirect_http"`
-	Cert         string `yaml:"cert"`
-	Key          string `yaml:"key"`
+	Enabled       bool   `yaml:"enabled"`
+	RedirectHTTP  bool   `yaml:"redirect_http"`
+	Cert          string `yaml:"cert"`
+	Key           string `yaml:"key"`
+	UseCustomPort bool   `yaml:"use_custom_port"`
 }
 
 type loggingConf struct {

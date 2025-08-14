@@ -38,9 +38,10 @@ func start(s *fiber.App) {
 	if !config.Get().Server.TLS.Enabled {
 		log.WithField("port", config.Get().Server.Port).Info("TLS is disabled starting http server")
 		log.WithError(s.Listen(fmt.Sprintf(":%d", config.Get().Server.Port))).Fatal()
+		return // not reached
 	}
 	// TLS enabled
-	if config.Get().Server.TLS.RedirectHTTP {
+	if config.Get().Server.TLS.RedirectHTTP && !config.Get().Server.TLS.UseCustomPort {
 		httpServer := fiber.New(serverConfig)
 		httpServer.All(
 			"*", func(ctx *fiber.Ctx) error {
@@ -57,8 +58,18 @@ func start(s *fiber.App) {
 		}()
 	}
 	time.Sleep(time.Millisecond) // This is just for a more pretty output with the tls header printed after the http one
-	log.Info("TLS enabled, starting https server on port 443")
-	log.WithError(s.ListenTLS(":443", config.Get().Server.TLS.Cert, config.Get().Server.TLS.Key)).Fatal()
+	port := 443
+	if config.Get().Server.TLS.UseCustomPort {
+		port = config.Get().Server.Port
+	}
+	log.Infof("TLS enabled, starting https server on port %d", port)
+	log.WithError(
+		s.ListenTLS(
+			fmt.Sprintf(":%d", port),
+			config.Get().Server.TLS.Cert,
+			config.Get().Server.TLS.Key,
+		),
+	).Fatal()
 }
 
 // Start starts the server
