@@ -37,7 +37,7 @@ func (c IntrospectionAuthChecker) CheckAuthorization(auth string) (bool, error) 
 		return false, internalServerError(fmt.Sprintf("failed to check auth at local issuer: %s", err))
 	}
 	code := httpResp.StatusCode()
-	if code != 401 && code <= 500 {
+	if code >= 200 && code < 300 {
 		return true, nil
 	}
 	return false, nil
