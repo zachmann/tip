@@ -5,7 +5,7 @@ go 1.24.4
 require (
 	github.com/fatih/structs v1.1.0
 	github.com/go-oidfed/lib v0.6.0
-	github.com/gofiber/fiber/v2 v2.52.9
+	github.com/gofiber/fiber/v2 v2.52.10
 	github.com/google/go-querystring v1.1.0
 	github.com/lestrrat-go/jwx/v3 v3.0.11
 	github.com/oidc-mytoken/utils v0.1.2
