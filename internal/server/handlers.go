@@ -21,6 +21,7 @@ func tip() *pkg.TIP {
 
 func handleRemoteIntrospection(ctx *fiber.Ctx) error {
 	var req pkg.TokenIntrospectionRequest
+	body := ctx.Body()
 	if err := errors.WithStack(ctx.BodyParser(&req)); err != nil {
 		errRes := pkg.TIPError{
 			ErrorCode:        "invalid_request",
@@ -29,6 +30,8 @@ func handleRemoteIntrospection(ctx *fiber.Ctx) error {
 		}
 		return ctx.Status(errRes.Status).JSON(errRes)
 	}
+	req.Body = body
+	req.ContentType = string(ctx.Request().Header.ContentType())
 	req.Authorization = ctx.Get("Authorization")
 	res, err := tip().Introspect(req)
 	if err != nil {

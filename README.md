@@ -24,11 +24,11 @@ flowchart TD
    A[TIP receives token introspection request]
    AA[TIP inspects the token in the request and determines the issuer of the token]
    B{Is issuer the linked AS?}
-   C[Replay request at RFC7662 endpoint]
+   C[Create new request using parameters and credentials from original request]
+   CC[Send request to linked AS's RFC7662 endpoint]
    D[Return response to client unmodified]
    E[Check client authentication]
-   F[Send dummy request
-    with real client auth
+   F[Send dummy request with original client credentials
     but dummy token
     to linked AS's RFC7662 endpoint]
    G{Client auth valid?}
@@ -50,7 +50,7 @@ flowchart TD
 
    A --> AA
    AA --> B
-   B -- Yes --> C --> D
+   B -- Yes --> C --> CC --> D
    B -- No --> E --> F --> G
    G -- No --> H
    G -- Yes --> I --> J
