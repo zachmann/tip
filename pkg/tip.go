@@ -39,6 +39,8 @@ type TokenIntrospectionRequest struct {
 	Token         string `json:"token" form:"token" query:"token" url:"token"`
 	TokenTypeHint string `json:"token_type_hint,omitempty" form:"token_type_hint,omitempty" query:"token,omitempty" url:"token,omitempty"`
 	Authorization string `json:"-" form:"-" query:"-" url:"-"`
+	Body          []byte `json:"-" form:"-" query:"-" url:"-"`
+	ContentType   string `json:"-" form:"-" query:"-" url:"-"`
 }
 
 type TokenIntrospectionResponse struct {
@@ -170,7 +172,7 @@ func (t TIP) findRemoteIssuer(iss string) *remoteIssuerConf {
 }
 
 func (t TIP) remoteIntrospection(iss string, req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {
-	authed, err := t.authChecker.CheckAuthorization(req.Authorization)
+	authed, err := t.authChecker.CheckAuthorization(req)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +265,7 @@ func (t TIP) introspectRemoteIssuer(conf *remoteIssuerConf, req TokenIntrospecti
 
 func (t TIP) unknownFallbackIntrospection(req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {
 	if t.conf.FallbackIssuerUnknown.IssuerURL == "" {
-		authed, err := t.authChecker.CheckAuthorization(req.Authorization)
+		authed, err := t.authChecker.CheckAuthorization(req)
 		if err != nil {
 			return nil, err
 		}
@@ -279,7 +281,7 @@ func (t TIP) unsupportedFallbackIntrospection(req TokenIntrospectionRequest) (
 	*TokenIntrospectionResponse, error,
 ) {
 	if t.conf.FallbackIssuerUnsupported.IssuerURL == "" {
-		authed, err := t.authChecker.CheckAuthorization(req.Authorization)
+		authed, err := t.authChecker.CheckAuthorization(req)
 		if err != nil {
 			return nil, err
 		}
@@ -292,14 +294,25 @@ func (t TIP) unsupportedFallbackIntrospection(req TokenIntrospectionRequest) (
 }
 
 func (t TIP) linkedIntrospection(req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {
-	params, err := query.Values(req)
-	if err != nil {
-		return nil, invalidRequestError("required parameter 'token' not given")
+	request := httpclient.Do().R()
+
+	// Prefer forwarding original body when provided; otherwise, fall back to form from parsed struct values
+	if len(req.Body) > 0 {
+		request.SetBody(req.Body)
+		if req.ContentType != "" {
+			request.SetHeader("Content-Type", req.ContentType)
+		}
+	} else {
+		params, err := query.Values(req)
+		if err != nil {
+			return nil, invalidRequestError("required parameter 'token' not given")
+		}
+		request.SetFormDataFromValues(params)
 	}
-	httpResp, err := httpclient.Do().R().
-		SetFormDataFromValues(params).
-		SetHeader("Authorization", req.Authorization).
-		SetResult(&TokenIntrospectionResponse{}).
+	if req.Authorization != "" {
+		request.SetHeader("Authorization", req.Authorization)
+	}
+	httpResp, err := request.SetResult(&TokenIntrospectionResponse{}).
 		Post(t.conf.LinkedIssuer.NativeIntrospectionEndpoint)
 	if err != nil {
 		return nil, internalServerError(fmt.Sprintf("failed to introspect local issuer: %s", err))
