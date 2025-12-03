@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/oidc-mytoken/utils/httpclient"
 )
@@ -25,19 +26,30 @@ type IntrospectionAuthChecker struct {
 
 // CheckAuthorization implements the AuthorizationChecker interface
 func (c IntrospectionAuthChecker) CheckAuthorization(req TokenIntrospectionRequest) (bool, error) {
-	values, err := url.ParseQuery(string(req.Body))
-	if err != nil {
-		return false, internalServerError("could not parse request body for auth check")
+	// Build a form payload for the dummy introspection. Prefer parsing the original body
+	// when it is form-encoded; otherwise, fall back to a minimal form to avoid 500s.
+	var values url.Values
+	ct := strings.ToLower(strings.TrimSpace(req.ContentType))
+	if i := strings.Index(ct, ";"); i >= 0 {
+		ct = strings.TrimSpace(ct[:i])
+	}
+	if len(req.Body) > 0 && ct == "application/x-www-form-urlencoded" {
+		if v, err := url.ParseQuery(string(req.Body)); err == nil {
+			values = v
+		} else {
+			// Gracefully degrade to empty values; do not return 500 on parse errors
+			values = url.Values{}
+		}
+	} else {
+		values = url.Values{}
 	}
 	values.Set("token", "dummy")
-	request := httpclient.Do().R().
-		SetFormDataFromValues(values)
+
+	request := httpclient.Do().R().SetFormDataFromValues(values)
 	if req.Authorization != "" {
 		request.SetHeader("Authorization", req.Authorization)
 	}
-	httpResp, err := request.
-		SetResult(&TokenIntrospectionResponse{}).
-		Post(c.endpoint)
+	httpResp, err := request.SetResult(&TokenIntrospectionResponse{}).Post(c.endpoint)
 	if err != nil {
 		return false, internalServerError(fmt.Sprintf("failed to check auth at local issuer: %s", err))
 	}

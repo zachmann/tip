@@ -296,18 +296,23 @@ func (t TIP) unsupportedFallbackIntrospection(req TokenIntrospectionRequest) (
 func (t TIP) linkedIntrospection(req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {
 	request := httpclient.Do().R()
 
+	// Prefer forwarding original body when provided; otherwise, fall back to form from parsed struct values
 	if len(req.Body) > 0 {
 		request.SetBody(req.Body)
-	
 		if req.ContentType != "" {
 			request.SetHeader("Content-Type", req.ContentType)
 		}
+	} else {
+		params, err := query.Values(req)
+		if err != nil {
+			return nil, invalidRequestError("required parameter 'token' not given")
+		}
+		request.SetFormDataFromValues(params)
 	}
 	if req.Authorization != "" {
 		request.SetHeader("Authorization", req.Authorization)
 	}
-	httpResp, err := request.
-		SetResult(&TokenIntrospectionResponse{}).
+	httpResp, err := request.SetResult(&TokenIntrospectionResponse{}).
 		Post(t.conf.LinkedIssuer.NativeIntrospectionEndpoint)
 	if err != nil {
 		return nil, internalServerError(fmt.Sprintf("failed to introspect local issuer: %s", err))
@@ -321,4 +326,3 @@ func (t TIP) linkedIntrospection(req TokenIntrospectionRequest) (*TokenIntrospec
 	}
 	return resp, nil
 }
-
