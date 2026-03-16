@@ -49,6 +49,13 @@ tip:
     issuer_url: https://linked.issuer.com
     # The issuer's native introspection endpoint; TIP will replay requests for "local" tokens at this endpoint.
     native_introspection_endpoint: https://linked.issuer.com/internal/introspect
+    # If true, TIP exposes a /.well-known/openid-configuration endpoint that proxies the linked issuer's
+    # OpenID configuration, replacing the introspection_endpoint with TIP's public endpoint.
+    # The metadata is cached for 1 hour.
+    proxy_well_known: false
+    # The public URL of TIP's introspection endpoint. Required if proxy_well_known is true.
+    # This value replaces the introspection_endpoint in the proxied OpenID configuration.
+    public_introspection_endpoint: https://tip.example.com/
   # Configuration of the fallback issuer that is used when the issuer of a token
   # cannot be determined;
   # If empty, {"active": false} is returned for such tokens.

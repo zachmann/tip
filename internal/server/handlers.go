@@ -11,12 +11,34 @@ import (
 )
 
 var _tip *pkg.TIP
+var _wellKnownProxy *pkg.WellKnownProxy
 
 func tip() *pkg.TIP {
 	if _tip == nil {
 		_tip = pkg.NewTokenProxy(config.Get().TIP, nil)
 	}
 	return _tip
+}
+
+func wellKnownProxy() *pkg.WellKnownProxy {
+	if _wellKnownProxy == nil {
+		_wellKnownProxy = pkg.NewWellKnownProxy(config.Get().TIP.LinkedIssuer)
+	}
+	return _wellKnownProxy
+}
+
+func handleWellKnown(ctx *fiber.Ctx) error {
+	metadata, err := wellKnownProxy().GetMetadata()
+	if err != nil {
+		return ctx.Status(fiber.StatusBadGateway).JSON(
+			pkg.TIPError{
+				ErrorCode:        "upstream_error",
+				ErrorDescription: "failed to fetch issuer metadata",
+				Status:           fiber.StatusBadGateway,
+			},
+		)
+	}
+	return ctx.JSON(metadata)
 }
 
 func handleRemoteIntrospection(ctx *fiber.Ctx) error {

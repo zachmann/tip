@@ -31,6 +31,9 @@ func Init() {
 }
 
 func addRoutes(s fiber.Router) {
+	if config.Get().TIP.LinkedIssuer.ProxyWellKnown {
+		s.Get("/.well-known/openid-configuration", handleWellKnown)
+	}
 	s.Post("/", handleRemoteIntrospection)
 }
 

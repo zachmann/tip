@@ -7,16 +7,18 @@ import (
 )
 
 type TIPConfig struct {
-	LinkedIssuer              linkedIssuerConf   `yaml:"linked_issuer"`
+	LinkedIssuer              LinkedIssuerConf   `yaml:"linked_issuer"`
 	RemoteIssuers             []remoteIssuerConf `yaml:"remote_issuers"`
 	FallbackIssuerUnknown     remoteIssuerConf   `yaml:"fallback_issuer_unknown_token_issuer"`
 	FallbackIssuerUnsupported remoteIssuerConf   `yaml:"fallback_issuer_unsupported_token_issuer"`
 	Federation                federationConf     `yaml:"federation"`
 }
 
-type linkedIssuerConf struct {
+type LinkedIssuerConf struct {
 	IssuerURL                   string `yaml:"issuer_url"`
 	NativeIntrospectionEndpoint string `yaml:"native_introspection_endpoint"`
+	ProxyWellKnown              bool   `yaml:"proxy_well_known"`
+	PublicIntrospectionEndpoint string `yaml:"public_introspection_endpoint"`
 }
 
 type remoteIssuerConf struct {
