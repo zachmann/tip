@@ -1,8 +1,16 @@
 package pkg
 
 import (
+	"fmt"
+	"net/url"
+	"path/filepath"
+
+	oidfed "github.com/go-oidfed/lib"
+	"github.com/lestrrat-go/jwx/v3/jwa"
 	"github.com/oidc-mytoken/utils/httpclient"
 	"github.com/oidc-mytoken/utils/utils"
+	"github.com/oidc-mytoken/utils/utils/fileutil"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -11,7 +19,7 @@ type TIPConfig struct {
 	RemoteIssuers             []remoteIssuerConf `yaml:"remote_issuers"`
 	FallbackIssuerUnknown     remoteIssuerConf   `yaml:"fallback_issuer_unknown_token_issuer"`
 	FallbackIssuerUnsupported remoteIssuerConf   `yaml:"fallback_issuer_unsupported_token_issuer"`
-	Federation                federationConf     `yaml:"federation"`
+	Federation                FederationConf     `yaml:"federation"`
 }
 
 type LinkedIssuerConf struct {
@@ -67,7 +75,135 @@ type claimsMapping struct {
 type stringsClaimsMapping map[string]map[string]string
 type stringSlicesClaimsMapping map[string]map[string][]string
 
-type federationConf struct {
+type FederationConf struct {
+	EntityID       string              `yaml:"entity_id"`
+	TrustAnchors   oidfed.TrustAnchors `yaml:"trust_anchors"`
+	AuthorityHints []string            `yaml:"authority_hints"`
+
+	KeyDir string `yaml:"key_dir"`
+
+	Federation SigningConf `yaml:"federation"`
+	OIDC       SigningConf `yaml:"oidc"`
+
+	ResourceName          string `yaml:"resource_name"`
+	ResourceDocumentation string `yaml:"resource_documentation"`
+
+	DisplayName      string   `yaml:"display_name"`
+	Description      string   `yaml:"description"`
+	Keywords         []string `yaml:"keywords"`
+	Contacts         []string `yaml:"contacts"`
+	LogoURI          string   `yaml:"logo_uri"`
+	PolicyURI        string   `yaml:"policy_uri"`
+	InformationURI   string   `yaml:"information_uri"`
+	OrganizationName string   `yaml:"organization_name"`
+	OrganizationURI  string   `yaml:"organization_uri"`
+
+	ExtraPRMetadata              map[string]any `yaml:"extra_pr_metadata"`
+	ExtraFEMetadata              map[string]any `yaml:"extra_fe_metadata"`
+	ExtraEntityConfigurationData map[string]any `yaml:"extra_entity_configuration_data"`
+
+	PublishInformationalClaimsInFederationEntity bool `yaml:"publish_informational_claims_in_federation_entity"`
+
+	ConfigurationLifetime int `yaml:"configuration_lifetime"`
+}
+
+type SigningConf struct {
+	Alg          string          `yaml:"alg"`
+	Algs         []string        `yaml:"algs"`
+	RSAKeyLen    int             `yaml:"rsa_key_len"`
+	GenerateKeys bool            `yaml:"generate_keys"`
+	KeyRotation  keyRotationConf `yaml:"automatic_key_rollover"`
+}
+
+type keyRotationConf struct {
+	Enabled  bool `yaml:"enabled"`
+	Interval int  `yaml:"interval"`
+	Overlap  int  `yaml:"overlap"`
+}
+
+func (sc *SigningConf) normalize() {
+	if sc.Alg != "" {
+		if len(sc.Algs) == 0 {
+			sc.Algs = []string{sc.Alg}
+		}
+	}
+	if sc.RSAKeyLen == 0 {
+		sc.RSAKeyLen = 2048
+	}
+}
+
+func (fc *FederationConf) Validate() error {
+	if fc.EntityID == "" {
+		return nil
+	}
+
+	if len(fc.TrustAnchors) == 0 {
+		return errors.New("federation.trust_anchors is required when entity_id is set")
+	}
+
+	if fc.KeyDir == "" {
+		return errors.New("federation.key_dir is required when entity_id is set")
+	}
+
+	if !fileutil.FileExists(fc.KeyDir) {
+		return errors.Errorf("federation.key_dir '%s' does not exist", fc.KeyDir)
+	}
+
+	fc.Federation.normalize()
+	fc.OIDC.normalize()
+
+	if fc.Federation.Alg == "" {
+		fc.Federation.Alg = "ES512"
+	}
+	if len(fc.Federation.Algs) == 0 {
+		fc.Federation.Algs = []string{fc.Federation.Alg}
+	}
+
+	if len(fc.Federation.Algs) != 1 {
+		return errors.New("federation.federation.algs must contain exactly one algorithm")
+	}
+
+	fedAlg, ok := jwa.LookupSignatureAlgorithm(fc.Federation.Algs[0])
+	if !ok {
+		return errors.Errorf("federation.federation.alg '%s' is not supported", fc.Federation.Algs[0])
+	}
+
+	for _, algStr := range fc.OIDC.Algs {
+		if _, ok := jwa.LookupSignatureAlgorithm(algStr); !ok {
+			return errors.Errorf("federation.oidc.alg '%s' is not supported", algStr)
+		}
+	}
+
+	if fc.ConfigurationLifetime == 0 {
+		fc.ConfigurationLifetime = 86400
+	}
+
+	for i, hint := range fc.AuthorityHints {
+		if _, err := url.Parse(hint); err != nil {
+			return errors.Errorf("federation.authority_hints[%d] '%s' is not a valid URL: %v", i, hint, err)
+		}
+	}
+
+	if !fc.Federation.GenerateKeys {
+		keyFile := filepath.Join(fc.KeyDir, fmt.Sprintf("%s.pem", fedAlg.String()))
+		if !fileutil.FileExists(keyFile) {
+			return errors.Errorf(
+				"federation.federation.generate_keys is false but key file '%s' does not exist", keyFile,
+			)
+		}
+	}
+
+	if !fc.OIDC.GenerateKeys {
+		for _, algStr := range fc.OIDC.Algs {
+			alg, _ := jwa.LookupSignatureAlgorithm(algStr)
+			keyFile := filepath.Join(fc.KeyDir, fmt.Sprintf("%s_%s.pem", "oidc", alg.String()))
+			if !fileutil.FileExists(keyFile) {
+				return errors.Errorf("federation.oidc.generate_keys is false but key file '%s' does not exist", keyFile)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (m stringsClaimsMapping) translate(claim, value string) string {
