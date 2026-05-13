@@ -36,7 +36,6 @@ flowchart TD
    I[Continue remote introspection]
    J{Can issuer
     be determined?}
-   K{Is issuer supported?}
    L{Is there a
     fallback issuer
     configured?}
@@ -47,6 +46,15 @@ flowchart TD
    P[Translate and rename claims
     according to configured rules]
    R[Return updated introspection response]
+   S{Is issuer configured
+    as remote issuer?}
+   T[Resolve issuer metadata via OpenID Federation]
+   U{Issuer supports
+    private_key_jwt?}
+   V[Create JWT client assertion using federation credentials]
+   W[Send request with client_assertion to issuer's introspection endpoint]
+   X{OIDFED resolution
+    successful?}
 
    A --> AA
    AA --> B
@@ -54,10 +62,14 @@ flowchart TD
    B -- No --> E --> F --> G
    G -- No --> H
    G -- Yes --> I --> J
-   K -- No --> L
    J -- No --> L
-   J -- Yes --> K
-   K -- Yes --> M --> N
+   J -- Yes --> S
+   S -- Yes --> M --> N
+   S -- No --> T --> X
+   X -- No --> L
+   X -- Yes --> U
+   U -- No --> L
+   U -- Yes --> V --> W --> N
    N -- No --> O
    Q --> N
    N -- Yes --> P
@@ -75,6 +87,4 @@ The docker image [myoidc/tip](https://hub.docker.com/r/myoidc/tip) is available 
 
 ## Future Work
 
-- Support for OpenID Federation will be added. Then it is not required to register a client with remote issuers (as 
-  long as they are part of the same federation).
 - ...
