@@ -118,8 +118,8 @@ github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-jose/go-jose/v4 v4.1.4 h1:moDMcTHmvE6Groj34emNPLs/qtYXRVcd6S7NHbHz3kA=
 github.com/go-jose/go-jose/v4 v4.1.4/go.mod h1:x4oUasVrzR7071A4TnHLGSPpNOm2a21K9Kf04k1rs08=
-github.com/go-oidfed/lib v0.10.8 h1:nVitXw2ZRhHz3JwgzbW3ZalWr35AEJxe9gfHi04ST3w=
-github.com/go-oidfed/lib v0.10.8/go.mod h1:IG5ddCeYACoZbABR1J6QR42XTUXxH9g/dxA2u1RssAo=
+github.com/go-oidfed/lib v0.10.9 h1:Upk3UMKk9TS6KGJL8N2tQ93LKyqXAqj2ZtRU+BaVFIw=
+github.com/go-oidfed/lib v0.10.9/go.mod h1:IG5ddCeYACoZbABR1J6QR42XTUXxH9g/dxA2u1RssAo=
 github.com/go-resty/resty/v2 v2.7.0/go.mod h1:9PWDzw47qPphMRFfhsyk0NnSgvluHcljSMVIq3w7q0I=
 github.com/go-resty/resty/v2 v2.17.2 h1:FQW5oHYcIlkCNrMD2lloGScxcHJ0gkjshV3qcQAyHQk=
 github.com/go-resty/resty/v2 v2.17.2/go.mod h1:kCKZ3wWmwJaNc7S29BRtUhJwy7iqmn+2mLtQrOyQlVA=
