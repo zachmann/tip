@@ -15,7 +15,7 @@ var _wellKnownProxy *pkg.WellKnownProxy
 
 func tip() *pkg.TIP {
 	if _tip == nil {
-		_tip = pkg.NewTokenProxy(config.Get().TIP, nil)
+		_tip = pkg.NewTokenProxy(config.Get().TIP, nil, federationLeafEntity)
 	}
 	return _tip
 }

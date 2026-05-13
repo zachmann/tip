@@ -69,14 +69,6 @@ func initFederationKeys() error {
 
 	federationSigner = kms.KMSToVersatileSignerWithPKStorage(federationKMS, federationPks)
 
-	oidcPks := &public.FilesystemPublicKeyStorage{
-		Dir:    conf.KeyDir,
-		TypeID: "oidc",
-	}
-	if err := oidcPks.Load(); err != nil {
-		return err
-	}
-
 	oidcKmsConfig := kms.KMSConfig{
 		GenerateKeys: conf.OIDC.GenerateKeys,
 		Algs:         oidcAlgs,
@@ -100,7 +92,7 @@ func initFederationKeys() error {
 		return err
 	}
 
-	if err := oidcKMS.Load(); err != nil {
+	if err = oidcKMS.Load(); err != nil {
 		return err
 	}
 
