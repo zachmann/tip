@@ -110,3 +110,118 @@ tip:
             special-users:
               - admins
               - dev
+
+  # Configuration for OpenID Federation support (optional)
+  # When enabled, TIP publishes its entity configuration at /.well-known/openid-federation
+  federation:
+    # Required: The unique identifier for this TIP instance in the federation
+    entity_id: https://tip.example.org
+    
+    # Required: List of trust anchors that TIP trusts
+    # Each trust anchor is identified by its entity ID
+    trust_anchors:
+      - entity_id: https://ta.oidfed.example.org
+    
+    # Optional: Authority hints point to intermediate entities that can help build trust chains
+    authority_hints:
+      - https://intermediate.example.org
+    
+    # Required: Directory where signing keys are stored
+    # Keys are automatically generated if generate_keys is true
+    key_dir: /etc/tip/keys
+    
+    # Federation signing configuration (for entity statements)
+    # Uses a single algorithm for signing entity configuration statements
+    federation:
+      # Single signing algorithm for federation entity statements (default: ES512)
+      # This must be exactly one algorithm
+      alg: ES512
+      # Optional: RSA key length when using RSA algorithms (default: 2048)
+      rsa_key_len: 2048
+      # Optional: Whether to automatically generate keys if they don't exist (default: true)
+      generate_keys: true
+      # Optional: Automatic key rotation configuration
+      automatic_key_rollover:
+        # Enable automatic key rotation (default: false)
+        enabled: false
+        # Interval between key rotations in seconds (default: 86400 = 24 hours)
+        interval: 86400
+        # Overlap period in seconds during which both old and new keys are valid (default: 3600 = 1 hour)
+        overlap: 3600
+    
+    # OIDC signing configuration (for general JWT operations)
+    # Supports multiple algorithms for flexibility
+    oidc:
+      # List of supported signing algorithms (default: [ES512])
+      # Multiple algorithms can be listed for flexibility
+      algs:
+        - ES512
+        - RS256
+      # Optional: RSA key length when using RSA algorithms (default: 2048)
+      rsa_key_len: 2048
+      # Optional: Whether to automatically generate keys if they don't exist (default: true)
+      generate_keys: true
+      # Optional: Automatic key rotation configuration (same as federation)
+      automatic_key_rollover:
+        enabled: false
+        interval: 86400
+        overlap: 3600
+    
+    # Optional: Entity configuration lifetime in seconds (default: 86400 = 24 hours)
+    # How long the entity configuration JWT is valid
+    configuration_lifetime: 86400
+    
+    # OAuth Protected Resource metadata (all optional)
+
+    # Human-readable name for this resource
+    resource_name: "TIP - Token Introspection Proxy"
+    
+    # URL with documentation about this resource
+    resource_documentation: https://docs.example.org/tip
+    
+    # Common federation metadata (all optional)
+    
+    # Display name for this entity
+    display_name: "TIP Service"
+    
+    # Description of this entity
+    description: "Token Introspection Proxy for federated identity"
+    
+    # Keywords for discovery
+    keywords:
+      - oauth
+      - introspection
+      - federation
+    
+    # Contact email addresses
+    contacts:
+      - admin@example.org
+    
+    # URL to logo image
+    logo_uri: https://tip.example.org/logo.png
+    
+    # URL to policy document
+    policy_uri: https://example.org/privacy
+    
+    # URL to information page
+    information_uri: https://example.org/info
+    
+    # Organization name
+    organization_name: "Example Organization"
+    
+    # Organization URL
+    organization_uri: https://example.org
+    
+    # Extra metadata to include in the protected resource metadata
+    extra_pr_metadata: {}
+    
+    # Extra metadata to include in the federation entity metadata
+    extra_fe_metadata: {}
+    
+    # Extra data to include in the entity configuration JWT
+    extra_entity_configuration_data:
+      tip_version: "1.0.0"
+    
+    # If true, copies common informational claims (like contacts, organization_name, etc.)
+    # from the protected resource metadata to the federation entity metadata
+    publish_informational_claims_in_federation_entity: true

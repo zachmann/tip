@@ -8,15 +8,18 @@ import (
 
 	"github.com/fatih/structs"
 	"github.com/go-oidfed/lib"
+	"github.com/go-oidfed/lib/apimodel"
+	"github.com/go-oidfed/lib/oidfedconst"
 	"github.com/google/go-querystring/query"
 	"github.com/lestrrat-go/jwx/v3/jws"
 	"github.com/oidc-mytoken/utils/httpclient"
 	"github.com/oidc-mytoken/utils/unixtime"
 	"github.com/oidc-mytoken/utils/utils/issuerutils"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
-func NewTokenProxy(conf TIPConfig, authChecker AuthorizationChecker) *TIP {
+func NewTokenProxy(conf TIPConfig, authChecker AuthorizationChecker, federationLeaf *oidfed.FederationLeaf) *TIP {
 	for i, issuer := range conf.RemoteIssuers {
 		issuer.discoverEndpoint()
 		conf.RemoteIssuers[i] = issuer
@@ -25,14 +28,16 @@ func NewTokenProxy(conf TIPConfig, authChecker AuthorizationChecker) *TIP {
 		authChecker = NewIntrospectionAuthChecker(conf.LinkedIssuer.NativeIntrospectionEndpoint)
 	}
 	return &TIP{
-		conf:        conf,
-		authChecker: authChecker,
+		conf:           conf,
+		authChecker:    authChecker,
+		federationLeaf: federationLeaf,
 	}
 }
 
 type TIP struct {
-	conf        TIPConfig
-	authChecker AuthorizationChecker
+	conf           TIPConfig
+	authChecker    AuthorizationChecker
+	federationLeaf *oidfed.FederationLeaf
 }
 
 type TokenIntrospectionRequest struct {
@@ -181,9 +186,61 @@ func (t TIP) remoteIntrospection(iss string, req TokenIntrospectionRequest) (*To
 	}
 	conf := t.findRemoteIssuer(iss)
 	if conf == nil {
-		return t.unsupportedFallbackIntrospection(req)
+		return t.oidfedIntrospection(iss, req)
 	}
 	return t.introspectRemoteIssuer(conf, req)
+}
+
+func (t TIP) oidfedIntrospection(iss string, req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {
+
+	resolved, err := oidfed.DefaultMetadataResolver.ResolveResponsePayload(
+		apimodel.ResolveRequest{
+			Subject:     iss,
+			TrustAnchor: t.federationLeaf.TrustAnchors.EntityIDs(),
+			EntityTypes: []string{
+				oidfedconst.EntityTypeOpenIDProvider,
+				oidfedconst.EntityTypeOAuthAuthorizationServer,
+			},
+		},
+	)
+	if err != nil {
+		log.WithError(err).WithField("iss", iss).Debugf("failed to resolve oidfed metadata")
+		return t.unsupportedFallbackIntrospection(req)
+	}
+	if resolved.Metadata == nil {
+		log.WithError(err).WithField("iss", iss).Debugf("resolved entity does not have metadata")
+		return t.unsupportedFallbackIntrospection(req)
+	}
+	var introspectionEndpoint string
+	var supportedAlgs []string
+	if metadata := resolved.Metadata.OAuthAuthorizationServer; metadata != nil {
+		introspectionEndpoint = metadata.IntrospectionEndpoint
+		supportedAlgs = metadata.IntrospectionEndpointAuthSigningAlgValuesSupported
+		if introspectionEndpoint != "" && !slices.Contains(
+			metadata.IntrospectionEndpointAuthMethodsSupported, "private_key_jwt",
+		) {
+			log.WithField(
+				"iss", iss,
+			).Debugf("Issuer does not support private_key_jwt authentication at introspection endpoint")
+			return t.unsupportedFallbackIntrospection(req)
+		}
+	}
+	if metadata := resolved.Metadata.OpenIDProvider; introspectionEndpoint == "" && metadata != nil {
+		introspectionEndpoint = metadata.IntrospectionEndpoint
+		supportedAlgs = metadata.IntrospectionEndpointAuthSigningAlgValuesSupported
+		if introspectionEndpoint != "" && !slices.Contains(
+			metadata.IntrospectionEndpointAuthMethodsSupported, "private_key_jwt",
+		) {
+			log.WithField(
+				"iss", iss,
+			).Debugf("Issuer does not support private_key_jwt authentication at introspection endpoint")
+			return t.unsupportedFallbackIntrospection(req)
+		}
+	}
+	if introspectionEndpoint == "" {
+		return t.unsupportedFallbackIntrospection(req)
+	}
+	return t.introspectOIDFEDIssuer(introspectionEndpoint, supportedAlgs, req)
 }
 
 func (t TIP) introspectRemoteIssuer(conf *remoteIssuerConf, req TokenIntrospectionRequest) (
@@ -261,6 +318,42 @@ func (t TIP) introspectRemoteIssuer(conf *remoteIssuerConf, req TokenIntrospecti
 		}
 	}
 	return finalResponse, nil
+}
+
+func (t TIP) introspectOIDFEDIssuer(
+	introspectionEndpoint string, signingAlgValuesSupported []string, req TokenIntrospectionRequest,
+) (*TokenIntrospectionResponse, error) {
+	params, err := query.Values(req)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	clientAssertion, err := t.federationLeaf.RequestObjectProducer().ClientAssertion(
+		introspectionEndpoint,
+		signingAlgValuesSupported...,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create client assertion")
+	}
+	params.Set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
+	params.Set("client_assertion", string(clientAssertion))
+
+	httpResp, err := httpclient.Do().R().
+		SetFormDataFromValues(params).
+		SetResult(&TokenIntrospectionResponse{}).
+		Post(introspectionEndpoint)
+	if err != nil {
+		return nil, internalServerError(fmt.Sprintf("failed to introspect oidfed remote issuer: %s", err))
+	}
+	if httpResp.StatusCode() != 200 {
+		return &TokenIntrospectionResponse{Active: false}, nil
+	}
+	resp, ok := httpResp.Result().(*TokenIntrospectionResponse)
+	if !ok {
+		return &TokenIntrospectionResponse{Active: false}, nil
+	}
+	// TODO support some result transformation
+	return resp, nil
 }
 
 func (t TIP) unknownFallbackIntrospection(req TokenIntrospectionRequest) (*TokenIntrospectionResponse, error) {

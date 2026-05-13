@@ -25,6 +25,10 @@ var serverConfig = fiber.Config{
 
 // Init initializes the server
 func Init() {
+	if err := initFederationEntity(); err != nil {
+		log.WithError(err).Fatal("Failed to initialize federation entity")
+	}
+
 	server = fiber.New(serverConfig)
 	addMiddlewares(server)
 	addRoutes(server)
@@ -34,6 +38,9 @@ func addRoutes(s fiber.Router) {
 	if config.Get().TIP.LinkedIssuer.ProxyWellKnown {
 		s.Get("/.well-known/openid-configuration", handleWellKnown)
 	}
+
+	addFederationRoutes(s)
+
 	s.Post("/", handleRemoteIntrospection)
 }
 

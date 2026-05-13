@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/go-oidfed/lib/jwx"
 	"github.com/oidc-mytoken/utils/utils/fileutil"
 	"github.com/pkg/errors"
 
@@ -97,6 +98,9 @@ func validate() error {
 	if err := conf.Logging.validate(); err != nil {
 		return err
 	}
+	if err := conf.TIP.Federation.Validate(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -108,9 +112,29 @@ func Load() {
 	}
 }
 
+func DefaultConfig() *Config {
+	oidcAlgs := make([]string, 0)
+	for _, alg := range jwx.SupportedAlgsStrings() {
+		oidcAlgs = append(oidcAlgs, alg)
+	}
+	return &Config{
+		TIP: pkg.TIPConfig{
+			Federation: pkg.FederationConf{
+				Federation: pkg.SigningConf{
+					GenerateKeys: true,
+				},
+				OIDC: pkg.SigningConf{
+					GenerateKeys: true,
+					Algs:         oidcAlgs,
+				},
+			},
+		},
+	}
+}
+
 func load() {
 	data, _ := fileutil.MustReadConfigFile("config.yaml", possibleConfigLocations)
-	conf = &Config{}
+	conf = DefaultConfig()
 	err := yaml.Unmarshal(data, conf)
 	if err != nil {
 		log.WithError(err).Fatal()
