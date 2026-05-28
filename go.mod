@@ -1,10 +1,10 @@
 module github.com/zachmann/tip
 
-go 1.25.1
+go 1.25.8
 
 require (
 	github.com/fatih/structs v1.1.0
-	github.com/go-oidfed/lib v0.10.8
+	github.com/go-oidfed/lib v0.10.10
 	github.com/gofiber/fiber/v2 v2.52.13
 	github.com/google/go-querystring v1.2.0
 	github.com/lestrrat-go/jwx/v3 v3.1.1
@@ -48,9 +48,9 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/zachmann/go-utils v0.0.0-20251216142941-208653c379f5 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 )
