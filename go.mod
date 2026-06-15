@@ -1,10 +1,10 @@
 module github.com/zachmann/tip
 
-go 1.25.1
+go 1.25.8
 
 require (
 	github.com/fatih/structs v1.1.0
-	github.com/go-oidfed/lib v0.10.8
+	github.com/go-oidfed/lib v0.10.12
 	github.com/gofiber/fiber/v2 v2.52.13
 	github.com/google/go-querystring v1.2.0
 	github.com/lestrrat-go/jwx/v3 v3.1.1
@@ -38,7 +38,7 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/mattn/go-runewidth v0.0.23 // indirect
-	github.com/redis/go-redis/v9 v9.19.0 // indirect
+	github.com/redis/go-redis/v9 v9.20.1 // indirect
 	github.com/scylladb/go-set v1.0.3-0.20200225121959-cc7b2070d91e // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
@@ -48,9 +48,9 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/zachmann/go-utils v0.0.0-20251216142941-208653c379f5 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.51.0 // indirect
-	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/text v0.38.0 // indirect
 )
