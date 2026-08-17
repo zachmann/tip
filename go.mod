@@ -10,7 +10,7 @@ require (
 	github.com/lestrrat-go/jwx/v3 v3.1.1
 	github.com/oidc-mytoken/utils v0.1.2
 	github.com/pkg/errors v0.9.1
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
